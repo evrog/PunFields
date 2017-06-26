@@ -27,3 +27,4 @@ Any help in improving it and making it an installable toolkit is welcome!
 
 Files 'roget-body.txt' and 'roget-index.txt' belong to: 
 Peter Mark Roget. 2004.  Roget’s thesaurus of English words and phrases. Project Gutenberg.
+at http://www.gutenberg.org/ebooks/10681
