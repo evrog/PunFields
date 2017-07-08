@@ -1,5 +1,5 @@
 # PunFields
-This is a start of the project for annotating sentences that contain semantic ambiguity, i.e. where a word or phrase is intentionally used in two meanings.
+This is the start of the project for annotating sentences that contain semantic ambiguity, i.e. where a word or phrase is intentionally used in two meanings.
 The scientific side of it is described in:
 
 @InProceedings{mikhalkova-karyakin:2017:SemEval,
@@ -11,12 +11,12 @@ The scientific side of it is described in:
   address   = {Vancouver, Canada},
   publisher = {Association for Computational Linguistics},
   pages     = {417--422},
-  abstract  = {The article describes a model of automatic interpretation of English puns,
-	based on Roget{'}s Thesaurus, and its implementation, PunFields. In a pun, the
+  abstract  = {The article describes a model of automatic interpretation of English puns
+	based on Roget{'}s Thesaurus and its implementation, PunFields. In a pun, the
 	algorithm discovers two groups of words that belong to two main semantic
 	fields. The fields become a semantic vector based on which an SVM classifier
 	learns to recognize puns. A rule-based model is then applied for recognition of
-	intentionally ambiguous (target) words and their definitions. In SemEval Task 7
+	intentionally ambiguous (target) words and their definitions. In SemEval Task 7,
 	PunFields shows a considerably good result in pun classification, but requires
 	improvement in searching for the target word and its definition.},
   url       = {http://www.aclweb.org/anthology/S17-2072}
