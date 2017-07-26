@@ -25,6 +25,6 @@ The scientific side of it is described in:
 This is not a ready-made package, but a number of Python-2.7 files that can be added to your project.
 Any help in improving it and making it an installable toolkit is welcome! 
 
-Files 'roget-body.txt' and 'roget-index.txt' belong to: 
+The file 'Roget' was created based on: 
 Peter Mark Roget. 2004.  Roget’s thesaurus of English words and phrases. Project Gutenberg.
 at http://www.gutenberg.org/ebooks/10681
