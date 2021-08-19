@@ -1,204 +1,148 @@
 # -*- coding: utf-8 -*-
-import nltk.data
-from nltk.stem import WordNetLemmatizer
-from nltk.tokenize import word_tokenize
+
+# Semantic vectorizer based on Roget's Thesaurus.
+# See: Mikhalkova, Elena, and Yuri Karyakin. "PunFields at SemEval-2017 Task 7: Employing Roget's Thesaurus in Automatic Pun Recognition and Interpretation." 
+# arXiv preprint arXiv:1707.05479 (2017). https://arxiv.org/pdf/1707.05479.pdf
+"""## Imports"""
+
+import spacy
+nlp = spacy.load('en')
+
+from collections import Counter
+
+import nltk
+nltk.download('punkt')
+nltk.download('wordnet')
 from nltk.corpus import wordnet as wn
-from nltk.corpus import stopwords
+from nltk.tokenize import sent_tokenize
 
-stopwords=stopwords.words('english')
-#stopwords=[]
-        
+"""## Globals"""
+# Roget's Thesaurus without any preprocessing. Needed only for ngram indices that signify semantic categories that these ngrams fall under.
 with open('Roget_1.txt', 'r') as index_file:
-    index = index_file.read().splitlines()
-    index = [i.lower() for i in index]
-    raw_index = [wd[:wd.find(" % ")] for wd in index]
+    raw_index = index_file.read().splitlines()
 
-def get_words(word):
-    if word not in stopwords:
-        try:
-            word=word.encode('utf-8')
-        except:
-            pass
-        nums=[]
-        if word in raw_index:
-            pos = raw_index.index(word)
-            item = index[pos]
-            nums = item[item.find(' % ')+3:].split(',')[:-1]
-            nums = [n[n.find('::')+2:] for n in nums]
-        else:
-            try:
-                for syns in wn.synsets(word):
-                    hyps=[]
-                    for h in syns.hypernyms():
-                        extra=str(h)
-                        extra=extra[extra.find("'")+1:extra.find('.')].replace('_', ' ')
-                        hyps.append(extra)
-                    if len(hyps)>0:
-                        for h in hyps:
-                            if h in raw_index:
-                                pos = raw_index.index(h)
-                                item = index[pos]
-                                nums = item[item.find(' % ')+3:].split(',')[:-1]
-                                nums = [n[n.find('::')+2:] for n in nums]
-            except:
-                pass
+# A list of part-of-speech tags corresponding to every ngram in Roget's Thesaurus: line per line. Hence, the Thesaurus and this list are of the same length.
+with open('Roget_pos_tags.txt', 'r') as one_file:
+  index_pos_tags=one_file.read().splitlines()
 
-        return list(set(nums))
-    else:
-        return []
+# 100 most frequent part-of-speech combinations from the Thesaurus, for ngrams of length > 1.
+unique_combinations=Counter(index_pos_tags)
+frequent_pos_combinations=[]
+for k, v in unique_combinations.items():
+  if len(k.split())>1 and v>100:
+    frequent_pos_combinations.append(k)
 
-def colloq(sent, lemmes):
-    colloqs = []
-    for s in enumerate(sent):
-        s_pos = s[0]
-        w = s[1]
-        if s_pos<len(sent)-1:
-            next_w = sent[s_pos+1]
-            if w.startswith('V'):
-                if next_w.startswith('DT') and s_pos<len(sent)-2:
-                    next_next_w = sent[s_pos+2]
-                    if next_next_w.startswith('N'):
-                        colloq = lemmes[s_pos][0]+' '+lemmes[s_pos+1][0]+' '+lemmes[s_pos+2][0]
-                        x = get_words(colloq)
-                        if len(x)>0:
-                            colloqs.append([colloq, "collocation", x])
-                    elif next_next_w.startswith('R'):
-                        colloq = lemmes[s_pos+1][0]+' '+lemmes[s_pos+2][0]
-                        x = get_words(colloq)
-                        if len(x)>0:
-                            colloqs.append([colloq, "collocation", x])
-                elif next_w.startswith('P') and s_pos<len(sent)-2:
-                    next_next_w = sent[s_pos+2]
-                    if next_next_w.startswith('N'):
-                        colloq = lemmes[s_pos][0]+' '+"one's"+' '+lemmes[s_pos+2][0]
-                        x = get_words(colloq)
-                        if len(x)>0:
-                            colloqs.append([colloq, "collocation", x])
-                elif next_w.startswith('N') and s_pos<len(sent)-2:
-                    next_next_w = sent[s_pos+2]
-                    if next_next_w.startswith('CC') and s_pos<len(sent)-3:
-                        next_next_next_w = sent[s_pos+3]
-                        if next_next_next_w.startswith('N'):
-                            colloq = lemmes[s_pos][0]+' '+lemmes[s_pos+1][0]+' '+lemmes[s_pos+2][0]+' '+lemmes[s_pos+3][0]
-                            x = get_words(colloq)
-                            if len(x)>0:
-                                colloqs.append([colloq, "collocation", x])
-                    else:
-                        colloq = lemmes[s_pos][0]+' '+lemmes[s_pos+1][0]
-                        x = get_words(colloq)
-                        if len(x)>0:
-                            colloqs.append([colloq, "collocation", x])
-                elif next_w.startswith('R') or next_w.startswith('I') or next_w.startswith('J'):
-                    colloq = lemmes[s_pos][0]+' '+lemmes[s_pos+1][0]
-                    x = get_words(colloq)
-                    if len(x)>0:
-                        colloqs.append([colloq, "collocation", x])
-            elif w.startswith('J') and next_w.startswith('N'):
-                colloq = lemmes[s_pos][0]+' '+lemmes[s_pos+1][0]
-                x = get_words(colloq)
-                if len(x)>0:
-                    colloqs.append([colloq, "collocation", x])
-            elif w.startswith('RB') and next_w.startswith('VBN'):
-                colloq = lemmes[s_pos][0]+' '+lemmes[s_pos+1][0]
-                x = get_words(colloq)
-                if len(x)>0:
-                    colloqs.append([colloq, "collocation", x])
-            elif w.startswith('N') and next_w.startswith('CC') and s_pos<len(sent)-2:
-                next_next_w = sent[s_pos+2]
-                if next_next_w.startswith('N'):
-                    colloq = lemmes[s_pos][0]+' '+lemmes[s_pos+1][0]+' '+lemmes[s_pos+2][0]
-                    x = get_words(colloq)
-                    if len(x)>0:
-                        colloqs.append([colloq, "collocation", x])
+# Lemmatized ngrams from Roget's. Again, the Thesaurus and this list are of the same length.
+with open('Roget_lemmas.txt', 'r') as two_file:
+  index_lemmas=two_file.read().lower().splitlines()
 
-    return colloqs
+"""## Main functions"""
+# Function check_ngram_in_roget (sub-function of get_ngram_indices)
+# Aim: to find the lemmatized ngram in the lemmatized Thesaurus and find the corresponding ngram in the original Thesaurus to extract semantic categories (there can be more than one category).
+# Input: lemmatized ngram
+# Output: list of ngram's indices (semantic categories)
+def check_ngram_in_roget(ngram):
+  pos = index_lemmas.index(ngram)
+  item = raw_index[pos]
+  nums = item[item.find(' % ')+3:].split(',')[:-1]
+  nums = [n[n.find('::')+2:] for n in nums]
+  return nums
 
+# Function get_ngram_indices
+# Aim: to check whether a lemmatized ngram is in the list of lemmatized ngrams from Roget's. If it is not, to check the lemmatized ngram in Wordnet and find synsets that it belongs to.
+# If there are such synsets, to check the ngram's nearest hypernym in the lemmatized Thesaurus.
+# Input: lemmatized ngram
+# Output: list of ngram's indices (semantic categories)
+def get_ngram_indices(ngram):
+  list_of_indices = []
+  if ngram in index_lemmas:
+    list_of_indices = check_ngram_in_roget(ngram)
+  else:
+    sn = wn.synsets(ngram)
+    if len(sn)>0:
+      for syns in wn.synsets(ngram):
+        hyps = []
+        for h in syns.hypernyms():
+          extra = str(h)
+          extra = extra[extra.find("'")+1:extra.find('.')].replace('_', ' ')
+          hyps.append(extra)
+        if len(hyps)>0:
+          for h in hyps:
+            if h in index_lemmas:
+              list_of_indices.extend(check_ngram_in_roget(h))
 
-def analyze_words(sentence):
-    sentence=sentence.lower()
-    groups = [0]*39
-    sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
-    try:
-        los = sent_detector.tokenize(sentence.strip())
-    except:
-        sentence=sentence.decode('utf-8', errors='replace')
-        los = sent_detector.tokenize(sentence.strip())
-    list_of_l = []
-    bugs = '[]()@#$%&^*+:;!?.,/=|,-"\/+'
-    for s in los:
-        for bug in bugs:
-            s=s.replace(bug, '')
-        try:
-            s=s.decode('utf-8', errors='replace')
-        except:
-            pass
-        pos_tags = word_tokenize(s)
-        for wd in enumerate(pos_tags):
-            if wd[1] == "n't":
-                pos = wd[0]
-                pos_tags[pos] = 'not'
-            elif wd[1] == "'s" or wd[1] == "'ll" or wd[1] == "'m" or wd[1] == "'re":
-                pos = wd[0]
-                pos_tags[pos] = 'be'
-            elif wd[1] == "'ve":
-                pos = wd[0]
-                pos_tags[pos] = 'have'
-            elif wd[1] == "'d":
-                pos = wd[0]
-                pos_tags[pos] = 'would'
-        
-        list_of_lemmes = []
-        for pos in nltk.pos_tag(pos_tags):
-            if pos not in list_of_lemmes:
-                list_of_lemmes.append(pos)
-                
-        wordnet_lemmatizer = WordNetLemmatizer()
-        lemmes = []
-        
-        for wd in list_of_lemmes:
-            pos_lemme = list_of_lemmes.index(wd)
-            topics = []
-            
-            if wd[1].startswith("V"):
-                lemme = wordnet_lemmatizer.lemmatize(wd[0], pos='v')
-                lemmes.append([lemme, wd[1], get_words(lemme)])
+  return list_of_indices
 
-            else:
-                lemme = wd[0]
-                lemmes.append([lemme, wd[1], get_words(lemme)])
+# Function process_text
+# Aim: process a text with spacy, extract lemmas and part-of-speech tokens, for unigrams get their indices at once,
+# for collocations (combinations of two and more tokens) check whether they are in the list of most frequent
+# part-of-speech combinations. If they are, look for them in the lemmatized Thesaurus, and get their indices.
+# Calculate how many indices of each of the 39 Roget's semantic categories there are in the final list of indices.
+# Input: a text of any length
+# Output: a semantic vector of length 39
+def process_text(text):
 
-        sent = [x[1] for x in lemmes]
-        colloqs = colloq(sent, lemmes) 
-        list_of_l.extend(colloqs)
+  text_split = text.splitlines()
+  list_of_sentences = []
+  for ts in text_split:
+    list_of_sentences.extend(sent_tokenize(ts))
 
-        for wd in lemmes:
-            pos_lemme = lemmes.index(wd)
-            topics = []
-            
-            if wd[1].startswith("J"):
-                lemmes.remove(wd)
-                lemme = wordnet_lemmatizer.lemmatize(wd[0], pos='a')
-                lemmes.append([lemme, wd[1], get_words(lemme)])
+  list_of_collocations=[]
+  list_of_indices=[]
 
-            elif wd[1].startswith("N"):
-                lemmes.remove(wd)
-                try:
-                    lemme = wordnet_lemmatizer.lemmatize(wd[0], pos='n')
-                except:
-                    lemme = wordnet_lemmatizer.lemmatize(wd[0].decode('utf-8', errors='replace'), pos='n')
-                lemmes.append([lemme, wd[1], get_words(lemme)])
-        list_of_l.extend(lemmes)
+  for los in list_of_sentences:
 
-    list_of_topics = [x[2] for x in list_of_l]
-    check = [val for sublist in list_of_topics for val in sublist]
-    for item in check:
-        if item!=None:
-            pos = int(item)
-            groups[pos]+=1
+    sentence_spacy=nlp(los)
 
-    return groups
+    for token in sentence_spacy:
+      if token.is_alpha == True:
+        list_of_indices.extend(get_ngram_indices(token.lemma_.lower()))
 
-    
-if __name__ == "__main__": 
-    print analyze_words("I used to be a banker but I lost interest.")
+    list_of_pos=[ss.pos_ for ss in sentence_spacy]
+    string_of_pos=' '.join(list_of_pos)
+    for fpc in frequent_pos_combinations:
+      if fpc in string_of_pos:
+        len_fpc=fpc.count(' ')
+        start=string_of_pos.index(fpc)
+        index_combination=string_of_pos[:start].count(' ')
+        list_of_collocations.append(' '.join([s.lemma_.lower() for s in sentence_spacy[index_combination:index_combination+len_fpc+1]]))
 
+  for loc in list_of_collocations:
+    list_of_indices.extend(get_ngram_indices(loc))
+  
+  semantic_groups=[0]*39
+  for loi in list_of_indices:
+    pos=int(loi)
+    semantic_groups[pos]+=1
+  
+  return semantic_groups
+
+"""## Test"""
+
+if __name__ == "__main__":
+  text_1="""
+Police had previously gone to home where Ohio patrol officers were killed
+
+CLEVELAND — Police invstigating domestic disputes had previously gone to the home where a man fatally shot two police officers over the weekend, but no arrests were ever made, police reports from the Columbus suburb of Westerville show.
+Westerville Officers Eric Joering, 39, and Anthony Morelli, 54, were killed shortly after noon Saturday in this normally quiet suburb while responding to a 911 hang-up call.
+The suspect, 30-year-old Quentin Smith, was shot and wounded by the officers and taken to Ohio State University Wexner Medical Center in critical condition Saturday.
+Advertisement
+A series of 911 calls released by the city of Westerville provide some details about what happened Saturday at a complex of town houses.
+Smith lived there with his wife, Candace, and a young daughter.
+Get Ground Game in your inbox: Daily updates and analysis on national politics from James Pindell.
+Sign Up Thank you for signing up!
+Sign up for more newsletters here
+Westerville Police Chief Joe Morbitzer said at a news conference Saturday that Joering and Morelli were shot immediately upon entering.
+After the initial hang-up call at noon, a dispatcher called the number back and reached a woman who was crying and could be heard saying, ‘‘won’t let me in.’’
+Officers were then sent to the home.
+At 12:12 p.m., an officer tells a dispatcher that it’s ‘‘all quiet right now,’’ followed by a door knock.
+At 12:13 p.m., after a dispatcher confirmed contact has been made, a man’s voice could be heard yelling, ‘‘We have shots fired.’’
+Four minutes later, someone, presumably a police officer, told a dispatcher: ‘‘We have two officers down.
+Child on couch, one at gunpoint.’’
+Advertisement
+ASSOCIATED PRESS
+"""
+  text_2 = "I used to be a banker but I lost interest."
+  
+  print(process_text(text_1))
+  print(process_text(text_2))
