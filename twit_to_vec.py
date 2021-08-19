@@ -18,7 +18,7 @@ from nltk.tokenize import sent_tokenize
 
 """## Globals"""
 # Roget's Thesaurus without any preprocessing. Needed only for ngram indices that signify semantic categories that these ngrams fall under.
-with open('Roget_thesaurus.txt', 'r') as index_file:
+with open('Roget_1.txt', 'r') as index_file:
     raw_index = index_file.read().splitlines()
 
 # A list of part-of-speech tags corresponding to every ngram in Roget's Thesaurus: line per line. Hence, the Thesaurus and this list are of the same length.
