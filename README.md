@@ -1,5 +1,5 @@
 # PunFields
-This is the start of the project for annotating sentences that contain semantic ambiguity, i.e. where a word or phrase is intentionally used in two meanings.
+This project is for automatic humor detection based on semantic feature selection.
 The scientific side of it is described in:
 
 Mikhalkova, Elena, and Yuri Karyakin. "PunFields at SemEval-2017 Task 7: Employing Roget's Thesaurus in Automatic Pun Recognition and Interpretation." Proceedings of the 11th International Workshop on Semantic Evaluation (SemEval-2017). 2017.
